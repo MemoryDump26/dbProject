@@ -1,0 +1,10 @@
+const value = {
+  host: "", // Mysql hostname: IP address (probably "127.0.0.1" or "localhost")
+  port: "", // Mysql port number
+  //socketPath: "", // Linux only.
+  user: "", // Mysql login username
+  password: "", // Mysql login password
+  database: "" // Clone "classicmodel" and put name here, schema soonTM :)
+}
+
+module.exports = { value }
