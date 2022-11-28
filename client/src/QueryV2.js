@@ -4,21 +4,68 @@ import 'semantic-ui-css/semantic.min.css';
 import './index.css';
 import { Table, Input, Button, Segment, Container, Grid } from 'semantic-ui-react';
 
-class QueryTable extends React.Component {
+export class QueryTable extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      columnName: [],
+      results: [],
+      rows: 0,
+      cols: 0,
+    }
+  }
+
+  componentDidMount() {
+    this.updateTable();
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.props.query === prevProps.query) return;
+    this.updateTable();
+  }
+
+  updateTable() {
+    console.log("Fetching");
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: this.props.query
+      }),
+    };
+
+    fetch("http://localhost:3001/query", fetchOptions)
+      .then((res) => res.json())
+      .then((data) => {
+        let tmp = [];
+        for (let key in data[0]) {
+          if (data[0].hasOwnProperty(key)) {
+            tmp.push(key);
+          }
+        }
+        this.setState({
+          columnName: tmp,
+          results: data,
+          rows: this.state.results.length,
+          cols: this.state.columnName.length,
+        })
+      })
   }
 
   render() {
     return (
       <Table celled={true} compact={true}>
         <Table.Header>
-          {this.props.header.map((n, index) => (
-            <Table.HeaderCell key={index}>{n}</Table.HeaderCell>
-          ))}
+          <Table.Row>
+            {this.state.columnName.map((n, index) => (
+              <Table.HeaderCell key={index}>{n}</Table.HeaderCell>
+            ))}
+          </Table.Row>
         </Table.Header>
         <Table.Body>
-          {this.props.body.map((c, index) => (
+          {this.state.results.map((c, index) => (
             <Table.Row key={index}>
               {Object.values(c).map((column, index) => {
                 return <Table.Cell key={index} collapsing={true}>{column}</Table.Cell>
@@ -33,7 +80,7 @@ class QueryTable extends React.Component {
   }
 }
 
-class QueryInput extends React.Component {
+export class QueryInput extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -73,49 +120,8 @@ export class QueryInterface extends React.Component {
     super(props);
     this.state = {
       query: "",
-      columnName: [],
-      results: [],
-      rows: 0,
-      cols: 0,
     }
     this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  componentDidMount() {
-    this.setState({
-      query: "select * from customers;",
-    });
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.state.query === prevState.query) return;
-    console.log("Fetching");
-    const fetchOptions = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: this.state.query
-      }),
-    };
-
-    fetch("http://localhost:3001/query", fetchOptions)
-      .then((res) => res.json())
-      .then((data) => {
-        let tmp = [];
-        for (let key in data[0]) {
-          if (data[0].hasOwnProperty(key)) {
-            tmp.push(key);
-          }
-        }
-        this.setState({
-          columnName: tmp,
-          results: data,
-          rows: this.state.results.length,
-          cols: this.state.columnName.length,
-        })
-      })
   }
 
   handleSubmit(input) {
@@ -128,7 +134,7 @@ export class QueryInterface extends React.Component {
     return (
       <Segment>
         <QueryInput handleSubmit={this.handleSubmit} />
-        <QueryTable header={this.state.columnName} body={this.state.results} />
+        <QueryTable query={this.state.query} />
       </Segment>
     )
   }
