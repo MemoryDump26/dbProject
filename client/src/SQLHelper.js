@@ -10,4 +10,12 @@ function createQuery(queryString) {
   };
 }
 
-module.exports = { createQuery }
+function query(queryString, callback) {
+  const fetchOptions = createQuery(queryString);
+
+ fetch("http://localhost:3001/query", fetchOptions)
+    .then(res => res.json())
+    .then(data => callback(data))
+}
+
+module.exports = { createQuery, query }

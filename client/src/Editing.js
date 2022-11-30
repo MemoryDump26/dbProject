@@ -16,6 +16,66 @@ import {
 
 const SQLHelper = require('./SQLHelper.js');
 
+export class EditTableInput extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      insertValue: {},
+    }
+    this.onInputChange = this.onInputChange.bind(this);
+    this.onInsert = this.onInsert.bind(this);
+    this.onClear = this.onClear.bind(this);
+  }
+
+  onInputChange(event, data, name) {
+    let newInsertValue = this.state.insertValue;
+    newInsertValue[name] = data.value;
+    this.setState({
+      insertValue: newInsertValue,
+    });
+    console.log(newInsertValue);
+  }
+
+  onInsert(event, data) {
+    let insertPart = "insert into " + this.props.table + "(";
+    let valuesPart = "values (";
+    this.props.columnName.map((n, index) => {
+      insertPart += n + ",";
+      valuesPart += "'" + this.state.insertValue[n] + "',";
+    });
+    insertPart = insertPart.substring(0, insertPart.length - 1) + ") ";
+    valuesPart = valuesPart.substring(0, valuesPart.length - 1) + ")";
+    let queryString = insertPart + valuesPart;
+    console.log(queryString);
+    SQLHelper.query(queryString, (data) => {console.log(data)});
+  }
+
+  onClear(event, data) {
+    console.log(this.state.insertValue);
+    this.setState({
+      insertValue: {},
+    })
+  }
+
+  render() {
+    return (
+      <Table.Row>
+        <Table.Cell collapsing>
+          <Button onClick={this.onInsert}>Insert</Button>
+          <Button onClick={this.onClear}>Clear</Button>
+        </Table.Cell>
+        {this.props.columnName.map((n, index) => (
+          <Table.Cell key={index}>
+            <Input
+              fluid
+              onChange={(event, data) => {this.onInputChange(event, data, n)}}
+            />
+          </Table.Cell>
+        ))}
+      </Table.Row>
+    );
+  }
+}
 export class EditTable extends React.Component {
   constructor(props) {
     super(props);
@@ -25,6 +85,8 @@ export class EditTable extends React.Component {
       rows: 0,
       cols: 0,
     }
+    this.updateData = this.updateData.bind(this);
+    this.updateColumnName = this.updateColumnName.bind(this);
   }
 
   componentDidMount() {
@@ -36,51 +98,59 @@ export class EditTable extends React.Component {
     this.fetchData();
   }
 
-  fetchData() {
-    const queryString = "select * from " + this.props.table + ";";
-    const fetchOptions = SQLHelper.createQuery(queryString);
+  updateData(data) {
+    this.setState({
+      results: data,
+      rows: this.state.results.length,
+    })
+  }
 
-    fetch("http://localhost:3001/query", fetchOptions)
-      .then((res) => res.json())
-      .then((data) => {
-        let tmp = [];
-        for (let key in data[0]) {
-          if (data[0].hasOwnProperty(key)) {
-            tmp.push(key);
-          }
-        }
-        this.setState({
-          columnName: tmp,
-          results: data,
-          rows: this.state.results.length,
-          cols: this.state.columnName.length,
-        })
-      })
+  updateColumnName(data) {
+    let newColumnName = [];
+    Object.values(data).map((columns) => {
+      newColumnName.push(columns.Field);
+    })
+    this.setState({
+      columnName: newColumnName,
+      cols: this.state.columnName.length,
+    })
+  }
+
+  fetchData() {
+    let queryString = "describe " + this.props.table + ";";
+    SQLHelper.query(queryString, (data) => {this.updateColumnName(data)});
+    queryString = "select * from " + this.props.table + ";";
+    SQLHelper.query(queryString, this.updateData);
   }
 
   render() {
     return (
-      <Table columns={this.state.cols} collapsing celled={true} >
+      <Table collapsing celled={true} >
         <Table.Header>
           <Table.Row>
+            <Table.HeaderCell collapsing />
             {this.state.columnName.map((n, index) => (
               <Table.HeaderCell key={index}>{n}</Table.HeaderCell>
             ))}
           </Table.Row>
         </Table.Header>
+
         <Table.Body>
-          <Table.Row>
-            {this.state.columnName.map((n, index) => (
-              <Table.Cell key={index}>
-                <Input fluid={true} />
-              </Table.Cell>
-            ))}
-          </Table.Row>
+          <EditTableInput columnName={this.state.columnName} table={this.props.table}/>
+
           {this.state.results.map((c, index) => (
             <Table.Row key={index}>
+              <Table.Cell collapsing>
+                <Button>Edit</Button>
+                <Button>Delete</Button>
+              </Table.Cell>
               {Object.values(c).map((column, index) => {
-                return <Table.Cell key={index} singleLine={false}>{column}</Table.Cell>
-              })}
+                return (
+                  <Table.Cell key={index} singleLine={false}>
+                    <Container fluid textAlign="left">{column}</Container>
+                  </Table.Cell>
+                )})
+              }
             </Table.Row>
           ))}
         </Table.Body>
@@ -97,34 +167,33 @@ export class TableSelector extends React.Component {
       tableList: [],
     }
     this.onChange = this.onChange.bind(this);
+    this.updateTableList = this.updateTableList.bind(this);
   }
 
   componentDidMount() {
     this.fetchTableList();
   }
 
+  updateTableList(data) {
+    let newTableList = [];
+    // IQ drop
+    Object.values(data).map((tmp) => {
+      Object.values(tmp).map((tmp2) => {
+        newTableList.push({
+          key: tmp2,
+          text: tmp2,
+          value: tmp2,
+        });
+      })
+    });
+    this.setState({
+      tableList: newTableList,
+    });
+  }
+
   fetchTableList() {
     const queryString = "show tables;"
-    const fetchOptions = SQLHelper.createQuery(queryString);
-
-    fetch("http://localhost:3001/query", fetchOptions)
-      .then((res) => res.json())
-      .then((data) => {
-        let newTableList = [];
-        // IQ drop
-        Object.values(data).map((tmp) => {
-          Object.values(tmp).map((tmp2) => {
-            newTableList.push({
-              key: tmp2,
-              text: tmp2,
-              value: tmp2,
-            });
-          })
-        });
-        this.setState({
-          tableList: newTableList,
-        });
-      });
+    SQLHelper.query(queryString, this.updateTableList);
   }
 
   onChange(event, data) {
@@ -153,14 +222,6 @@ export class EditInterface extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  componentDidMount() {
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.props.query === prevProps.query) return;
-  }
-
-
   handleSubmit(input) {
     this.setState({
       table: input,
@@ -169,14 +230,10 @@ export class EditInterface extends React.Component {
 
   render() {
     return (
-      <Segment.Group>
         <Segment>
-          <TableSelector options={this.state.tableList} handleSubmit={this.handleSubmit} />
-        </Segment>
-        <Segment>
+          <TableSelector handleSubmit={this.handleSubmit} />
           <EditTable table={this.state.table} />
         </Segment>
-      </Segment.Group>
     )
   }
 }

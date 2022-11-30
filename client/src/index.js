@@ -11,8 +11,6 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
   <React.StrictMode>
-    <div className="query_table">
       <EditInterface />
-    </div>
   </React.StrictMode>
 );
