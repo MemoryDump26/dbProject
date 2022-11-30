@@ -19,21 +19,20 @@ const SQLHelper = require('./SQLHelper.js');
 export class EditTableInput extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      insertValue: {},
-    }
+    let initialState = {};
+    props.columnName.map((c) => {
+      initialState[c] = "";
+    });
+    this.state = initialState;
     this.onInputChange = this.onInputChange.bind(this);
     this.onInsert = this.onInsert.bind(this);
     this.onClear = this.onClear.bind(this);
   }
 
   onInputChange(event, data, name) {
-    let newInsertValue = this.state.insertValue;
-    newInsertValue[name] = data.value;
     this.setState({
-      insertValue: newInsertValue,
+      [name]: data.value,
     });
-    console.log(newInsertValue);
   }
 
   onInsert(event, data) {
@@ -41,7 +40,7 @@ export class EditTableInput extends React.Component {
     let valuesPart = "values (";
     this.props.columnName.map((n, index) => {
       insertPart += n + ",";
-      valuesPart += "'" + this.state.insertValue[n] + "',";
+      valuesPart += "'" + this.state[n] + "',";
     });
     insertPart = insertPart.substring(0, insertPart.length - 1) + ") ";
     valuesPart = valuesPart.substring(0, valuesPart.length - 1) + ")";
@@ -51,10 +50,12 @@ export class EditTableInput extends React.Component {
   }
 
   onClear(event, data) {
-    console.log(this.state.insertValue);
-    this.setState({
-      insertValue: {},
-    })
+    let initialState = {};
+    this.props.columnName.map((c) => {
+      initialState[c] = "";
+    });
+    this.setState(initialState);
+    console.log(this.state);
   }
 
   render() {
@@ -69,6 +70,7 @@ export class EditTableInput extends React.Component {
             <Input
               fluid
               onChange={(event, data) => {this.onInputChange(event, data, n)}}
+              value={this.state[n]}
             />
           </Table.Cell>
         ))}
@@ -136,7 +138,7 @@ export class EditTable extends React.Component {
         </Table.Header>
 
         <Table.Body>
-          <EditTableInput columnName={this.state.columnName} table={this.props.table}/>
+          <EditTableInput key = {this.state.columnName} columnName={this.state.columnName} table={this.props.table}/>
 
           {this.state.results.map((c, index) => (
             <Table.Row key={index}>
