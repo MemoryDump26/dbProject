@@ -47,6 +47,7 @@ export class EditTableInput extends React.Component {
     let queryString = insertPart + valuesPart;
     console.log(queryString);
     SQLHelper.query(queryString, (data) => {console.log(data)});
+    this.props.handleInsert(this.state);
   }
 
   onClear(event, data) {
@@ -83,12 +84,14 @@ export class EditTable extends React.Component {
     super(props);
     this.state = {
       columnName: [],
+      primaryKey: [],
       results: [],
       rows: 0,
       cols: 0,
     }
     this.updateData = this.updateData.bind(this);
     this.updateColumnName = this.updateColumnName.bind(this);
+    this.handleInsert = this.handleInsert.bind(this);
   }
 
   componentDidMount() {
@@ -109,11 +112,17 @@ export class EditTable extends React.Component {
 
   updateColumnName(data) {
     let newColumnName = [];
+    let newPrimaryKey = [];
     Object.values(data).map((columns) => {
       newColumnName.push(columns.Field);
+      if (columns.Key === "PRI") {
+        newPrimaryKey.push(columns.Field);
+      }
     })
+    console.log(newPrimaryKey);
     this.setState({
       columnName: newColumnName,
+      primaryKey: newPrimaryKey,
       cols: this.state.columnName.length,
     })
   }
@@ -123,6 +132,34 @@ export class EditTable extends React.Component {
     SQLHelper.query(queryString, (data) => {this.updateColumnName(data)});
     queryString = "select * from " + this.props.table + ";";
     SQLHelper.query(queryString, this.updateData);
+  }
+
+  handleInsert(inputState) {
+    console.log(inputState);
+    let newResults = this.state.results;
+    newResults.unshift(inputState);
+    this.setState({
+      results: newResults,
+    });
+  }
+
+  onDelete(event, data, entry, index) {
+    let keyPart = "(";
+    let valuesPart = "(";
+    this.state.primaryKey.map((key, index) => {
+      keyPart += key + ",";
+      valuesPart += entry[key] + ",";
+    });
+    keyPart = keyPart.substring(0, keyPart.length - 1) + ") = ";
+    valuesPart = valuesPart.substring(0, valuesPart.length - 1) + ");";
+    let conditionString = keyPart + valuesPart;
+    let queryString = "delete from " + this.props.table + " where " + conditionString;
+    SQLHelper.query(queryString, (data) => {console.log(data)});
+    let newResults = this.state.results;
+    newResults.splice(index, 1);
+    this.setState({
+      results: newResults,
+    });
   }
 
   render() {
@@ -138,13 +175,18 @@ export class EditTable extends React.Component {
         </Table.Header>
 
         <Table.Body>
-          <EditTableInput key = {this.state.columnName} columnName={this.state.columnName} table={this.props.table}/>
+          <EditTableInput
+            key = {this.state.columnName}
+            columnName={this.state.columnName}
+            table={this.props.table}
+            handleInsert={this.handleInsert}
+          />
 
           {this.state.results.map((c, index) => (
             <Table.Row key={index}>
               <Table.Cell collapsing>
                 <Button>Edit</Button>
-                <Button>Delete</Button>
+                <Button onClick={(event, data) => {this.onDelete(event, data, c, index)}}>Delete</Button>
               </Table.Cell>
               {Object.values(c).map((column, index) => {
                 return (
