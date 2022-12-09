@@ -10,7 +10,9 @@
     "scripts": {
         "server": "node server.js",
         "client": "npm run start --prefix client",
-        "dev": "concurrently \"npm run server\" \"npm run client\""
+        "client2": "npm run start --prefix client2",
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "dev2": "concurrently \"npm run server\" \"npm run client2\""
     },
     "author": "",
     "license": "ISC",
