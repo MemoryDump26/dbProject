@@ -9,6 +9,10 @@ const db = mysql.createConnection(
   sqlCred.value
 );
 
+const errorJSON = {
+  error: true,
+}
+
 db.connect((err) => {
   if (err) throw err;
   console.log("Connected!");
@@ -38,6 +42,7 @@ const resolveQuery = function (req, res) {
   db.query(sql, (err, results) => {
     if (err) {
       console.log(err.code + ": " + sql);
+      res.json(errorJSON);
     }
     else res.json(results);
   });
